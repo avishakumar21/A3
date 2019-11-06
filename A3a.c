@@ -67,9 +67,9 @@ void pool_exit(struct pool *pool, int level){
 			pool->nMiddleEntered--;
 			if(pool->nMiddleWaiting > 0){
 				rthread_cv_notify(&pool->middle);
+			}
 			else if(pool->nMiddleEntered == 0){ //if no one is the pool and both waiting, give priority to the other team
 				rthread_cv_notifyAll(&pool->high);
-			}
 			}
 		}
 		else if (level == 1){
@@ -78,10 +78,11 @@ void pool_exit(struct pool *pool, int level){
 			pool->nHighEntered--;
 			if(pool->nHighWaiting > 0 ){
 				rthread_cv_notify(&pool->high);
+			}
 			else if(pool->nHighEntered == 0){
 				rthread_cv_notifyAll(&pool->middle);
 			}
-			}
+
 		}
 		else{
 			printf("level is not a valid parameter value (0 or 1)\n");			
