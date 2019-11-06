@@ -90,26 +90,26 @@ void pool_exit(struct pool *pool, int level){
 	}
 }
 
-#define NMIDDLE 10
-#define NHIGH 10
+#define NMIDDLE 20
+#define NHIGH 20
 #define NEXPERIMENTS 5
 
 char *middle[] = {
-	"m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9"
+	"m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m16", "m17", "m18", "m19"
 };
 char *high[] = {
-	"h0", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9"
+	"h0", "h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15", "h16", "h17", "h18", "h19"
 };
 
 void swimmer(void *shared, void *arg){
 	struct pool *pool = (struct pool *) shared;
 	char *name = (char *) arg;
 	for (int i = 0; i < NEXPERIMENTS; i++) {
-		rthread_delay(random() % 1000);
+		rthread_delay(random() % 10);
 		printf("swimmer %s entering pool\n", name);
 		pool_enter(pool, *name == 'h');
 		printf("swimmer %s entered pool\n", name);
-		rthread_delay(random() % 1000);
+		rthread_delay(random() % 10);
 		printf("swimmer %s leaving pool\n", name);
 		pool_exit(pool, *name == 'h');
 		printf("swimmer %s left pool\n", name);
