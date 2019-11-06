@@ -21,10 +21,10 @@ void pool_init(struct pool *pool){
 	memset(pool, 0, sizeof(*pool));
 	rthread_lock_init(&pool->lock);
 	// initialize your monitor variables here
-	rthread_cv_init(&pool->high);
-	rthread_cv_init(&pool->middle);
-	pool->nHighEntered = dev->nHighWaiting = 0;
-	pool->nMiddleEntered = dev->nMiddleWaiting = 0;
+	rthread_cv_init(&pool->high, &pool->lock);
+	rthread_cv_init(&pool->middle, &pool->lock);
+	pool->nHighEntered = pool->nHighWaiting = 0;
+	pool->nMiddleEntered = pool->nMiddleWaiting = 0;
 }
 
 void pool_enter(struct pool *pool, int level){
@@ -38,7 +38,7 @@ void pool_enter(struct pool *pool, int level){
 			}
 			assert(pool->nHighEntered == 0);
 			pool->nMiddleEntered++;
-			rthread_cv_notify(&pool->notify);
+			rthread_cv_notify(&pool->middle); //or should i notify high schoolers
 		}
 		else if (level == 1){ //high school
 			assert(pool->nMiddleEntered == 0 || (pool->nMiddleEntered > 0 && pool->nHighEntered == 0));
@@ -48,7 +48,7 @@ void pool_enter(struct pool *pool, int level){
 			}
 			assert(pool->nMiddleEntered == 0);
 			pool->nHighEntered++;
-			rthread_cv_wait(&pool->notify);
+			rthread_cv_wait(&pool->high);
 
 		}
 		else{
@@ -64,14 +64,14 @@ void pool_exit(struct pool *pool, int level){
 			assert(pool->nHighEntered == 0);
 			assert(pool->nMiddleEntered > 0);
 			pool->nMiddleEntered--;
-			rthread_cv_wait(&pool->rthread_cv_notifyAll);
+			rthread_cv_notifyAll(&pool->middle); //or other order?
 
 		}
 		else if (level == 1){
 			assert(pool->nMiddleEntered == 0);
 			assert(pool->nHighEntered > 0);
 			pool->nHighEntered--;
-			rthread_cv_wait(&pool->rthread_cv_notifyAll);
+			rthread_cv_notifyAll(&pool->high);
 
 		}
 		else{
@@ -97,11 +97,11 @@ void swimmer(void *shared, void *arg){
 	for (int i = 0; i < NEXPERIMENTS; i++) {
 		rthread_delay(random() % 1000);
 		printf("swimmer %s entering pool\n", name);
-		pool_enter(pool, *name == ’h’);
+		pool_enter(pool, *name == 'h');
 		printf("swimmer %s entered pool\n", name);
 		rthread_delay(random() % 1000);
 		printf("swimmer %s leaving pool\n", name);
-		pool_exit(pool, *name == ’h’);
+		pool_exit(pool, *name == 'h');
 		printf("swimmer %s left pool\n", name);
 	}
 }
