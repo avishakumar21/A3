@@ -31,24 +31,26 @@ void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 	// write the code here to enter the pool
 		if (level == 0){ //corressponds to middle school
+			printf()
 			assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));
-			if (pool->nHighEntered > 0 || pool->nMiddleEntered > 7){
+			while (pool->nHighEntered > 0 || pool->nMiddleEntered > 7){
 				pool->nMiddleWaiting++;
-				rthread_cv_wait(&pool->middle);
+				rthread_cv_wait(&pool->middle); //decrement waiting once you leave thu
+				pool->nMiddleWaiting--;
 			}
 			assert(pool->nHighEntered == 0 || pool->nMiddleEntered < 7);
 			pool->nMiddleEntered++;
-			rthread_cv_notify(&pool->middle); //or should i notify high schoolers
 		}
 		else if (level == 1){ //high school
 			assert(pool->nMiddleEntered == 0 || (pool->nMiddleEntered > 0 && pool->nHighEntered == 0));
-			if (pool->nMiddleEntered > 0 || pool->nHighEntered > 7){
-				pool->nMiddleWaiting++;
+			while (pool->nMiddleEntered > 0 || pool->nHighEntered > 7){
+				pool->nHighWaiting++;
 				rthread_cv_wait(&pool->high);
+				pool->nHighWaiting--;
+
 			}
 			assert(pool->nMiddleEntered == 0 || pool->nHighEntered < 7);
 			pool->nHighEntered++;
-			rthread_cv_wait(&pool->high);
 
 		}
 		else{
@@ -64,14 +66,14 @@ void pool_exit(struct pool *pool, int level){
 			assert(pool->nHighEntered == 0);
 			assert(pool->nMiddleEntered > 0);
 			pool->nMiddleEntered--;
-			rthread_cv_notifyAll(&pool->middle); //or other order?
+			rthread_cv_notify(&pool->middle); //uncessarily waking up all threads 
 
 		}
 		else if (level == 1){
 			assert(pool->nMiddleEntered == 0);
 			assert(pool->nHighEntered > 0);
 			pool->nHighEntered--;
-			rthread_cv_notifyAll(&pool->high);
+			rthread_cv_notify(&pool->high);
 
 		}
 		else{
