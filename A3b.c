@@ -2,8 +2,6 @@
 #define HIGH 1
 #define NLANES 7
 
-// change A3test so that NMIDDLE and NHIGH are 7 
-
 struct pool {
 rthread_lock_t lock;
 // you can add more monitor variables here
@@ -27,8 +25,8 @@ void pool_exit(struct pool *pool, int level){
 	}
 }
 
-#define NMIDDLE 10
-#define NHIGH 10
+#define NMIDDLE 7
+#define NHIGH 7
 #define NEXPERIMENTS 5
 
 char *middle[] = {
