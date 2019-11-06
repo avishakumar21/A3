@@ -32,21 +32,21 @@ void pool_enter(struct pool *pool, int level){
 	// write the code here to enter the pool
 		if (level == 0){ //corressponds to middle school
 			assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));
-			if (pool->nHighEntered > 0){
+			if (pool->nHighEntered > 0 || pool->nMiddleEntered > 7){
 				pool->nMiddleWaiting++;
 				rthread_cv_wait(&pool->middle);
 			}
-			assert(pool->nHighEntered == 0);
+			assert(pool->nHighEntered == 0 || pool->nMiddleEntered < 7);
 			pool->nMiddleEntered++;
 			rthread_cv_notify(&pool->middle); //or should i notify high schoolers
 		}
 		else if (level == 1){ //high school
 			assert(pool->nMiddleEntered == 0 || (pool->nMiddleEntered > 0 && pool->nHighEntered == 0));
-			if (pool->nMiddleEntered > 0){
+			if (pool->nMiddleEntered > 0 || pool->nHighEntered > 7){
 				pool->nMiddleWaiting++;
 				rthread_cv_wait(&pool->high);
 			}
-			assert(pool->nMiddleEntered == 0);
+			assert(pool->nMiddleEntered == 0 || pool->nHighEntered < 7);
 			pool->nHighEntered++;
 			rthread_cv_wait(&pool->high);
 
