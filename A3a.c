@@ -31,7 +31,6 @@ void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 	// write the code here to enter the pool
 		if (level == 0){ //corressponds to middle school
-			printf()
 			assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));
 			while (pool->nHighEntered > 0 || pool->nMiddleEntered > 7){
 				pool->nMiddleWaiting++;
@@ -62,19 +61,27 @@ void pool_enter(struct pool *pool, int level){
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		// write the code here to exit the pool
-		if (level == 0){
+		if (level == 0){ 
 			assert(pool->nHighEntered == 0);
 			assert(pool->nMiddleEntered > 0);
 			pool->nMiddleEntered--;
-			rthread_cv_notify(&pool->middle); //uncessarily waking up all threads 
-
+			if(pool->nMiddleWaiting > 0){
+				rthread_cv_notify(&pool->middle); //uncessarily waking up all threads
+				if(pool->nMiddleEntered == 0){
+					rthread_cv_notifyAll(&pool->high);
+				}
+			}
 		}
 		else if (level == 1){
 			assert(pool->nMiddleEntered == 0);
 			assert(pool->nHighEntered > 0);
 			pool->nHighEntered--;
-			rthread_cv_notify(&pool->high);
-
+			if(pool->nHighWaiting > 0 ){
+				rthread_cv_notify(&pool->high);
+				if(pool->nHighEntered == 0){
+					rthread_cv_notifyAll(&pool->middle);
+				}
+			}
 		}
 		else{
 			printf("level is not a valid parameter value (0 or 1)\n");			
