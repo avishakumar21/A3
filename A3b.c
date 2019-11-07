@@ -10,28 +10,30 @@
 #define NHIGH 7
 #define NEXPERIMENTS 5
 
-struct cv_array {
-	int type; //whether this type is middle or high 
-	rthread_cv_t cv; //each swimmer gets their own conditional variable
-};
+
 
 struct pool {
 	rthread_lock_t lock;
 	//make an array of structs
+	struct cv_array {
+	int type; //whether this type is middle or high 
+	rthread_cv_t cv; //each swimmer gets their own conditional variable
+	};
+
 	cv_array swimmers[NHIGH + NMIDDLE];
 	int nHighEntered, nMiddleEntered;
-	int index = 0;
-	int count = 0;
+	int index;
+	int count;
 };
 
 void pool_init(struct pool *pool){
-	memset(pool->cv_array, 0, sizeof(pool->cv_array));
+	memset(pool, 0, sizeof(*pool));
 	rthread_lock_init(&pool->lock);
 	// initialize your monitor variables here
 	//initalize each conditional variable in struct array
-	for(int i = 0; i < NMIDDLE + NHIGH; i++)
+	for(unsigned int i = 0; i < NMIDDLE + NHIGH; i++)
 		rthread_cv_init(&pool->swimmers[i]->cv, &pool->lock);
-		pool->swimmer[i]->type = NULL;
+		pool->swimmers[i]->type = NULL;
 	}
 	pool->index = 0; 
 	pool->count = 0;
