@@ -6,6 +6,9 @@
 #define MIDDLE 0
 #define HIGH 1
 #define NLANES 7
+#define NMIDDLE 7
+#define NHIGH 7
+#define NEXPERIMENTS 5
 
 
 struct pool {
@@ -15,6 +18,7 @@ struct pool {
 	rthread_cv_t middle;
 	rthread_cv_t high;
 	int index;
+	int nHighEntered, nMiddleEntered;
 };
 
 void pool_init(struct pool *pool){
@@ -24,22 +28,26 @@ void pool_init(struct pool *pool){
 	rthread_cv_init(&pool->middle, &pool->lock);
 	rthread_cv_init(&pool->high, &pool->lock);
 	rthread_cv_init(&pool->cv_array, &pool->lock); //am i initializing this correctly 
-	index = 0;
+	pool->index = 0;
+	pool->nHighEntered = pool->nMiddleEntered = 0;
 }
 
 void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){ //corressponds to middle school
 			while(pool->nHighEntered > 0){
-				pool->cv_array[index + 1] = pool->middle; //the first index does not get allocated 
-				rthread_cv_wait(&pool->cv_array[index]);
-				index++;		
+				pool->cv_array[pool->index + 1] = pool->middle; //the first index does not get allocated 
+				rthread_cv_wait(&pool->cv_array[pool->index]);
+				pool->nMiddleEntered++
+				pool->index++;		
 			}
+		}
 		else if (level == 1){
 			while(pool->nMiddleEntered > 0){
-				pool->cv_array[index + 1] = pool->high;
-				rthread_cv_wait(&pool->cv_array[index]);
-				index++;
+				pool->cv_array[pool->index + 1] = pool->high;
+				rthread_cv_wait(&pool->cv_array[pool->index]);
+				pool->nHighEntered++
+				pool->index++;
 			}
 		}
 		else{
