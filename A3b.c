@@ -10,45 +10,51 @@
 #define NHIGH 7
 #define NEXPERIMENTS 5
 
+struct cv_array {
+	int type; //whether this type is middle or high 
+	rthread_cv_t cv; //each swimmer gets their own conditional variable
+};
 
 struct pool {
 	rthread_lock_t lock;
-	//make array of condition variables
-	rthread_cv_t cv_array[NMIDDLE + NHIGH];
-	rthread_cv_t middle;
-	rthread_cv_t high;
-	int index;
+	//make an array of structs
+	cv_array swimmers[NHIGH + NMIDDLE];
 	int nHighEntered, nMiddleEntered;
+	int index = 0;
+	int count = 0;
 };
 
 void pool_init(struct pool *pool){
-	memset(pool, 0, sizeof(*pool));
+	memset(pool->cv_array, 0, sizeof(pool->cv_array));
 	rthread_lock_init(&pool->lock);
 	// initialize your monitor variables here
-	rthread_cv_init(&pool->middle, &pool->lock);
-	rthread_cv_init(&pool->high, &pool->lock);
-	rthread_cv_init(&pool->cv_array, &pool->lock); //am i initializing this correctly 
-	pool->index = 0;
+	//initalize each conditional variable in struct array
+	for(int i = 0; i < NMIDDLE + NHIGH; i++)
+		rthread_cv_init(&pool->swimmers[i]->cv, &pool->lock);
+		pool->swimmer[i]->type = NULL;
+	}
+	pool->index = 0; 
+	pool->count = 0;
 	pool->nHighEntered = pool->nMiddleEntered = 0;
 }
 
 void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){ //corressponds to middle school
+			pool->swimmers[pool->index]->type = 0;
 			while(pool->nHighEntered > 0){
-				pool->cv_array[pool->index + 1] = pool->middle; //the first index does not get allocated 
-				rthread_cv_wait(&pool->cv_array[pool->index]);
-				pool->nMiddleEntered++;
-				pool->index++;		
+				rthread_cv_wait(&pool->swimmers[pool->index]->cv);
 			}
+			pool->nMiddleEntered++;
+			pool->index++;
 		}
 		else if (level == 1){
+			pool->swimmers[pool->index]->type = 1;
 			while(pool->nMiddleEntered > 0){
-				pool->cv_array[pool->index + 1] = pool->high;
-				rthread_cv_wait(&pool->cv_array[pool->index]);
-				pool->nHighEntered++;
-				pool->index++;
+				rthread_cv_wait(&pool->swimmers[pool->index]->cv);
 			}
+			pool->nHighEntered++;
+			pool->index++;
 		}
 		else{
 			printf("level is not a valid parameter value (0 or 1)\n");
@@ -58,9 +64,30 @@ void pool_enter(struct pool *pool, int level){
 
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
-		for(int i = 0; i < NMIDDLE + NHIGH; i++){
-			rthread_cv_notify(&pool->cv_array[i + 1]);
+		if (level == 0){
+			pool->nMiddleEntered--;
+			if (pool->nMiddleEntered == 0){
+				pool->count = pool->index+1
+				while(&pool->swimmers[pool->count]->type == 1){
+					rthread_cv_notify(&pool->swimmers[pool->count]->cv);
+					pool->count++;
+				}
+			}
 		}
+		else if (level == 1){
+			pool->nHighEntered--;
+			if (pool->nHighEntered == 0){
+				pool->count = pool->index+1
+				while(&pool->swimmers[pool->count]->type == 0){
+					rthread_cv_notify(&pool->swimmers[pool->count]->cv);
+					pool->count++;
+				}
+			}			
+
+		}
+		else{
+			printf("level is not a valid parameter value (0 or 1)\n");			
+		}		
 	}
 }
 
