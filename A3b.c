@@ -31,7 +31,7 @@ void pool_init(struct pool *pool){
 	//initalize each conditional variable in struct array
 	for( int i = 0; i < NMIDDLE + NHIGH; i++){
 		rthread_cv_init(&pool->swimmers[i].cv, &pool->lock);
-		pool->swimmers[i]->type = NULL;
+		pool->swimmers[i].type = NULL;
 	}
 	pool->index = 0; 
 	pool->count = 0;
@@ -49,7 +49,7 @@ void pool_enter(struct pool *pool, int level){
 			pool->index++;
 		}
 		else if (level == 1){
-			pool->swimmers[pool->index]->type = 1;
+			pool->swimmers[pool->index].type = 1;
 			while(pool->nMiddleEntered > 0){
 				rthread_cv_wait(&pool->swimmers[pool->index].cv);
 			}
