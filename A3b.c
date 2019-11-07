@@ -38,7 +38,7 @@ void pool_enter(struct pool *pool, int level){
 			while(pool->nHighEntered > 0){
 				pool->cv_array[pool->index + 1] = pool->middle; //the first index does not get allocated 
 				rthread_cv_wait(&pool->cv_array[pool->index]);
-				pool->nMiddleEntered++
+				pool->nMiddleEntered++;
 				pool->index++;		
 			}
 		}
@@ -46,7 +46,7 @@ void pool_enter(struct pool *pool, int level){
 			while(pool->nMiddleEntered > 0){
 				pool->cv_array[pool->index + 1] = pool->high;
 				rthread_cv_wait(&pool->cv_array[pool->index]);
-				pool->nHighEntered++
+				pool->nHighEntered++;
 				pool->index++;
 			}
 		}
