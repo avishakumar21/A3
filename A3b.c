@@ -66,7 +66,7 @@ void pool_exit(struct pool *pool, int level){
 		if (level == 0){
 			pool->nMiddleEntered--;
 			if (pool->nMiddleEntered == 0){
-				pool->count = pool->index + 1;
+				pool->count = pool->index;
 				while(pool->swimmers[pool->count].type == 1){
 					rthread_cv_notify(&pool->swimmers[pool->count].cv);
 					pool->count++;
@@ -76,7 +76,7 @@ void pool_exit(struct pool *pool, int level){
 		else if (level == 1){
 			pool->nHighEntered--;
 			if (pool->nHighEntered == 0){
-				pool->count = pool->index + 1;
+				pool->count = pool->index;
 				while(pool->swimmers[pool->count].type == 0){
 					rthread_cv_notify(&pool->swimmers[pool->count].cv);
 					pool->count++;

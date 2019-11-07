@@ -6,6 +6,9 @@
 #define MIDDLE 0
 #define HIGH 1
 #define NLANES 7
+#define NMIDDLE 20
+#define NHIGH 20
+#define NEXPERIMENTS 5
 
 struct pool {
 	rthread_lock_t lock;
@@ -31,7 +34,7 @@ void pool_enter(struct pool *pool, int level){
 			assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));
 			while (pool->nHighEntered > 0 || pool->nMiddleEntered > NLANES){
 				pool->nMiddleWaiting++;
-				rthread_cv_wait(&pool->middle); //decrement waiting once you leave thu
+				rthread_cv_wait(&pool->middle);
 				pool->nMiddleWaiting--;
 			}
 			assert(pool->nHighEntered == 0 || pool->nMiddleEntered < NLANES);
@@ -83,9 +86,6 @@ void pool_exit(struct pool *pool, int level){
 	}
 }
 
-#define NMIDDLE 20
-#define NHIGH 20
-#define NEXPERIMENTS 5
 
 char *middle[] = {
 	"m0", "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "m10", "m11", "m12", "m13", "m14", "m15", "m16", "m17", "m18", "m19"
