@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include "rthread.h"
 #define MIDDLE 0
 #define HIGH 1
 #define NLANES 7
@@ -6,8 +11,7 @@
 struct pool {
 	rthread_lock_t lock;
 	//make array of condition variables
-	int total = NMIDDLE + NHIGH;
-	rthread_cv_t cv_array[total];
+	rthread_cv_t cv_array[NMIDDLE + NHIGH];
 	rthread_cv_t middle;
 	rthread_cv_t high;
 	int index;
@@ -27,13 +31,13 @@ void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){ //corressponds to middle school
 			while(pool->nHighEntered > 0){
-				pool->cv_array[index + 1] = &pool->middle; //the first index does not get allocated 
+				pool->cv_array[index + 1] = pool->middle; //the first index does not get allocated 
 				rthread_cv_wait(&pool->cv_array[index]);
 				index++;		
 			}
 		else if (level == 1){
 			while(pool->nMiddleEntered > 0){
-				pool->cv_array[index + 1] = &pool->high;
+				pool->cv_array[index + 1] = pool->high;
 				rthread_cv_wait(&pool->cv_array[index]);
 				index++;
 			}
@@ -46,9 +50,10 @@ void pool_enter(struct pool *pool, int level){
 
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
-		for(int i = 0; i < pool->total; i++){
+		for(int i = 0; i < NMIDDLE + NHIGH; i++){
 			rthread_cv_notify(&pool->cv_array[i + 1]);
 		}
+	}
 }
 
 
