@@ -20,6 +20,8 @@ struct pool {
 	} swimmers[NMIDDLE + NHIGH];
 	int nHighEntered, nMiddleEntered;
 	int nMiddleWaiting, nHighWaiting;
+	int front_index;
+	int back_index;
 	int index;
 	int count;
 };
