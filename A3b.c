@@ -63,7 +63,7 @@ void pool_enter(struct pool *pool, int level){
 			pool->swimmers[pool->front_index % 14].type = -1;
 		}
 		else if (level == 1){
-			pool->swimmers[pool->(front_index % 14)].type = 1;
+			pool->swimmers[pool->front_index % 14].type = 1;
 			while(!((pool->nMiddleEntered == 0 && pool->nMiddleWaiting == 0) || index < pool->front_index)){
 				if(index != default_index){
 					rthread_cv_wait(&pool->swimmers[pool->front_index % 14].cv);
