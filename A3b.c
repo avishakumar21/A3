@@ -19,7 +19,7 @@ struct pool {
 		rthread_cv_t cv; //each swimmer gets their own conditional variable
 	} swimmers[NMIDDLE + NHIGH];
 	int nHighEntered, nMiddleEntered;
-	int nMiddleWaiting, nHighWaiting
+	int nMiddleWaiting, nHighWaiting;
 	int index;
 	int count;
 };
