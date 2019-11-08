@@ -73,7 +73,7 @@ void pool_exit(struct pool *pool, int level){
 					pool->count++;
 				}
 			}
-			if (pool->nMiddleEntered > 0 && pool->swimmers[pool->index].type == 0]){
+			if (pool->nMiddleEntered > 0 && pool->swimmers[pool->index].type == 0){
 				rthread_cv_notify(&pool->swimmers[pool->count].cv);
 
 			}
@@ -87,7 +87,7 @@ void pool_exit(struct pool *pool, int level){
 					pool->count++;
 				}
 			}
-			if (pool->nHighEntered > 0 && pool->swimmers[pool->index].type == 1]){
+			if (pool->nHighEntered > 0 && pool->swimmers[pool->index].type == 1){
 				rthread_cv_notify(&pool->swimmers[pool->count].cv);
 
 			}			
