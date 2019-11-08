@@ -41,8 +41,8 @@ void pool_init(struct pool *pool){
 	pool->nMiddleWaiting = pool->nHighWaiting = 0;
 }
 
-int index = NMIDDLE + NHIGH + 1;
 void pool_enter(struct pool *pool, int level){
+	int index = NMIDDLE + NHIGH + 1;
 	rthread_with(&pool->lock) {
 		index = pool->front_index;
 		if (level == 0){ //corressponds to middle school
