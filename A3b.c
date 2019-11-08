@@ -39,7 +39,7 @@ void pool_init(struct pool *pool){
 	pool->nMiddleWaiting = pool->nHighWaiting = 0;
 }
 
-default_index = NMIDDLE*600 + NHIGH*600;
+int default_index = NMIDDLE*600 + NHIGH*600;
 void pool_enter(struct pool *pool, int level){
 	int index = default_index;
 	rthread_with(&pool->lock) {
