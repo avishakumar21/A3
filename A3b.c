@@ -11,7 +11,6 @@
 #define NEXPERIMENTS 5
 
 
-
 struct pool {
 	rthread_lock_t lock;
 	//make an array of structs
@@ -20,6 +19,7 @@ struct pool {
 		rthread_cv_t cv; //each swimmer gets their own conditional variable
 	} swimmers[NMIDDLE + NHIGH];
 	int nHighEntered, nMiddleEntered;
+	int nMiddleWaiting, nHighWaiting
 	int index;
 	int count;
 };
@@ -30,18 +30,19 @@ void pool_init(struct pool *pool){
 	// initialize your monitor variables here
 	//initalize each conditional variable in struct array
 	for( int i = 0; i < NMIDDLE + NHIGH; i++){
-		rthread_cv_init(&pool->swimmers[i].cv, &pool->lock);
+		rthread_cv_init(&pool->swimmers[i].cv, &pool->lock); //should i initalize the type!!!!
 	}
 	pool->index = 0; 
 	pool->count = 0;
 	pool->nHighEntered = pool->nMiddleEntered = 0;
+	pool->nMiddleWaiting = pool->nHighWaiting = 0;
 }
 
 void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){ //corressponds to middle school
 			pool->swimmers[pool->index].type = 0;
-			while(pool->nHighEntered > 0){
+			while(pool->nHighEntered > 0 ){ //have  waiting variale //coorecrion 
 				rthread_cv_wait(&pool->swimmers[pool->index].cv);
 			}
 			pool->nMiddleEntered++;
@@ -65,22 +66,30 @@ void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){
 			pool->nMiddleEntered--;
-			if (pool->nMiddleEntered == 0){
-				pool->count = pool->index + 1;
+			if (pool->nMiddleEntered == 0 && pool->swimmers[pool->index].type == 1){
+				pool->count = pool->index;
 				while(pool->swimmers[pool->count].type == 1){
 					rthread_cv_notify(&pool->swimmers[pool->count].cv);
 					pool->count++;
 				}
 			}
+			if (pool->nMiddleEnetered > 0 && pool->swimmers[pool->index.type == 0]){
+				rthread_cv_notify(&pool->swimmers[pool->count].cv);
+
+			}
 		}
 		else if (level == 1){
 			pool->nHighEntered--;
-			if (pool->nHighEntered == 0){
-				pool->count = pool->index + 1;
+			if (pool->nHighEntered == 0 && pool->swimmers[pool->index].type == 0){
+				pool->count = pool->index;
 				while(pool->swimmers[pool->count].type == 0){
 					rthread_cv_notify(&pool->swimmers[pool->count].cv);
 					pool->count++;
 				}
+			}
+			if (pool->nHighEnetered > 0 && pool->swimmers[pool->index.type == 1]){
+				rthread_cv_notify(&pool->swimmers[pool->count].cv);
+
 			}			
 
 		}
