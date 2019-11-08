@@ -22,8 +22,6 @@ struct pool {
 	int nMiddleWaiting, nHighWaiting;
 	int front_index;
 	int back_index;
-	int index;
-	int count;
 };
 
 void pool_init(struct pool *pool){
@@ -41,42 +39,51 @@ void pool_init(struct pool *pool){
 	pool->nMiddleWaiting = pool->nHighWaiting = 0;
 }
 
+
 void pool_enter(struct pool *pool, int level){
-	int index = NMIDDLE + NHIGH + 1;
+	int index = NMIDDLE*6 + NHIGH*6 + 1;
 	rthread_with(&pool->lock) {
-		index = pool->front_index;
 		if (level == 0){ //corressponds to middle school
 			pool->swimmers[pool->front_index].type = 0;
-			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index < pool->front_index)){
-				if(index != NMIDDLE + NHIGH + 1){
-					pool->nMiddleWaiting++;
+			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index % 14 < pool->front_index)){
+				if(index != NMIDDLE*6 + NHIGH*6 + 1){
 					rthread_cv_wait(&pool->swimmers[pool->index].cv);
-					pool->nMiddleWaiting--;
 
 				}
 				else{
-					pool->nMiddleEntered++;
+					index = pool->back_index;
 					pool->back_index++;
-					pool->swimmers[pool->front_index].type = -1;
+					pool->nMiddleWaiting++;
+					rthread_cv_wait(&pool->swimmers[pool->index % 14].cv); //overflow!!! mod with 14
 				}
 			}
+			if(index != NMIDDLE*6 + NHIGH*6 + 1){			
+				pool->nMiddleWaiting--;
+			)
+			pool->nMiddleEntered++;
+			pool->swimmers[pool->front_index].type = -1;
+
+
 		}
 		else if (level == 1){
 			pool->swimmers[pool->front_index].type = 1;
-			while(!((pool->nMiddleEntered == 0 && pool->nMiddleWaiting == 0) || index < pool->front_index)){
-				if(index != NMIDDLE + NHIGH + 1){
-					pool->nHighWaiting++;
+			while(!((pool->nMiddleEntered == 0 && pool->nMiddleWaiting == 0) || index % 14 < pool->front_index)){
+				if(index != NMIDDLE*6 + NHIGH*6 + 1){
 					rthread_cv_wait(&pool->swimmers[pool->index].cv);
-					pool->nHighWaiting--;
 				}
 				else{
-					pool->nHighEntered++;
+					index = pool->back_index;
 					pool->back_index++;
-					pool->swimmers[pool->front_index].type = -1;
+					pool->nHighWaiting++;
+					rthread_cv_wait(&pool->swimmers[pool->index % 14].cv); //overflow!!! mod with 14
 
 				}
 			}
-		}
+			if(index != NMIDDLE*6 + NHIGH*6 + 1){			
+				pool->nHighWaiting--;
+			}
+			pool->nHighEntered++;
+			pool->swimmers[pool->front_index].type = -1;
 		else{
 			printf("level is not a valid parameter value (0 or 1)\n");
 		}
@@ -96,11 +103,8 @@ void pool_exit(struct pool *pool, int level){
 					pool->front_index++;
 				}
 			}
-			if (pool->nMiddleEntered > 0 && pool->swimmers[pool->front_index].type == 0){ //if middle in the pool and next is middle 
-				while(pool->swimmers[pool->front_index].type == 0){
-					rthread_cv_notify(&pool->swimmers[pool->front_index].cv);
-					pool->front_index++;
-				}
+			if (pool->nMiddleEntered > 0){ // && pool->swimmers[pool->front_index].type == 1){ //if middle in the pool and next is middle 
+				return;
 			}
 		}
 		else if (level == 1){
@@ -114,11 +118,8 @@ void pool_exit(struct pool *pool, int level){
 					pool->front_index++;
 				}
 			}
-			if (pool->nHighEntered > 0 && pool->swimmers[pool->front_index].type == 1){
-				while(pool->swimmers[pool->front_index].type == 0){
-					rthread_cv_notify(&pool->swimmers[pool->front_index].cv);
-					pool->front_index++;
-				}
+			if (pool->nHighEntered > 0){ // && pool->swimmers[pool->front_index].type == 1){
+				return;
 			}			
 
 		}
