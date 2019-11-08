@@ -44,8 +44,8 @@ void pool_enter(struct pool *pool, int level){
 	int index = default_index;
 	rthread_with(&pool->lock) {
 		if (level == 0){ //corressponds to middle school
-			pool->swimmers[pool->(front_index % 14)].type = 0;
-			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index < pool->front_index){
+			pool->swimmers[pool->front_index % 14].type = 0;
+			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index < pool->front_index)){
 				if(index != default_index){ //spurious wake up
 					rthread_cv_wait(&pool->swimmers[pool->front_index % 14].cv);
 				}
@@ -61,8 +61,6 @@ void pool_enter(struct pool *pool, int level){
 			}
 			pool->nMiddleEntered++;
 			pool->swimmers[pool->front_index % 14].type = -1;
-
-
 		}
 		else if (level == 1){
 			pool->swimmers[pool->(front_index % 14)].type = 1;
