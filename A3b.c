@@ -47,7 +47,7 @@ void pool_enter(struct pool *pool, int level){
 		index = pool->front_index;
 		if (level == 0){ //corressponds to middle school
 			pool->swimmers[pool->front_index].type = 0;
-			while(!((nHighEntered == 0 && nHighWaiting == 0) || index < pool->front_index)){
+			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index < pool->front_index)){
 				if(index != NMIDDLE + NHIGH + 1){
 					pool->nMiddleWaiting++;
 					rthread_cv_wait(&pool->swimmers[pool->index].cv);
@@ -63,7 +63,7 @@ void pool_enter(struct pool *pool, int level){
 		}
 		else if (level == 1){
 			pool->swimmers[pool->front_index].type = 1;
-			while(!((nMiddleEntered == 0 && nMiddleWaiting == 0) || index < pool->front_index)){
+			while(!((pool->nMiddleEntered == 0 && pool->nMiddleWaiting == 0) || index < pool->front_index)){
 				if(index != NMIDDLE + NHIGH + 1){
 					pool->nHighWaiting++;
 					rthread_cv_wait(&pool->swimmers[pool->index].cv);
@@ -108,9 +108,7 @@ void pool_exit(struct pool *pool, int level){
 			if (pool->front_index == pool->back_index){ //no one waiting, just leave 
 				return;
 			}
-			if (pool->nHighEntered == 0 && pool->
-
-				&& pool->swimmers[pool->front_index].type == 0){
+			if (pool->nHighEntered == 0 && pool->swimmers[pool->front_index].type == 0){
 				while(pool->swimmers[pool->front_index].type == 0){
 					rthread_cv_notify(&pool->swimmers[pool->front_index].cv);
 					pool->front_index++;
