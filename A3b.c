@@ -104,11 +104,15 @@ void pool_exit(struct pool *pool, int level){
 		}
 		else if (level == 1){
 			pool->nHighEntered--;
+			printf("trying to leave\n");
 			if (pool->front_index == pool->back_index || pool->nHighEntered > 0){ //no one waiting, just leave 
+				printf("no one waiting?\n");
 				return;
 			}
 			if (pool->nHighEntered == 0 && pool->swimmers[pool->front_index % 14].type == 0){
+				printf("going to notify\n");
 				while(pool->swimmers[pool->front_index % 14].type == 0){
+					printf("actually notifying\n");
 					rthread_cv_notify(&pool->swimmers[pool->front_index % 14].cv);
 					pool->front_index++;
 				}
