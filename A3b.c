@@ -89,13 +89,20 @@ void pool_enter(struct pool *pool, int level){
 
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
+		printf("exiting beginning\n");
 		if (level == 0){
+			printf("trying to leave\n");
+			printf(pool->front_index);
+			printf(pool->back_index);
+			printf(pool->nMiddleEntered);
 			pool->nMiddleEntered--;
 			if (pool->front_index == pool->back_index || pool->nMiddleEntered > 0){ //no one waiting, just leave 
+				printf("middle no one waiting?\n");
 				return;
 			}
 			if (pool->nMiddleEntered == 0 && pool->swimmers[pool->front_index % 14].type == 1){ //if no middle in the pool and next is high 
 				while(pool->swimmers[pool->front_index % 14].type == 1){
+					printf("notifying middle\n");
 					rthread_cv_notify(&pool->swimmers[pool->front_index % 14].cv);
 					pool->front_index++;
 				}
@@ -105,6 +112,9 @@ void pool_exit(struct pool *pool, int level){
 		else if (level == 1){
 			pool->nHighEntered--;
 			printf("trying to leave\n");
+			printf(pool->front_index);
+			printf(pool->back_index);
+			printf(pool->nHighEntered);
 			if (pool->front_index == pool->back_index || pool->nHighEntered > 0){ //no one waiting, just leave 
 				printf("no one waiting?\n");
 				return;
