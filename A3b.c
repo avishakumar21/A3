@@ -5,10 +5,10 @@
 #include "rthread.h"
 #define MIDDLE 0
 #define HIGH 1
-#define NLANES 3
-#define NMIDDLE 3
-#define NHIGH 3
-#define NEXPERIMENTS 2
+#define NLANES 7
+#define NMIDDLE 7
+#define NHIGH 7
+#define NEXPERIMENTS 5
 
 
 struct pool {
@@ -39,31 +39,26 @@ void pool_init(struct pool *pool){
 	pool->nMiddleWaiting = pool->nHighWaiting = 0;
 }
 
-int default_index = NMIDDLE*600 + NHIGH*600;
+int default_index = NMIDDLE*6000 + NHIGH*6000;
 void pool_enter(struct pool *pool, int level){
 	int index = default_index;
 	rthread_with(&pool->lock) {
-		//printf("high entered %d\n", pool->nHighEntered);
-		//printf("middle entered %d\n", pool->nMiddleEntered);
-
 		if (level == 0){ //corresponds to middle school
 			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index < pool->front_index)){ //less than or equal to?
 				if(index != default_index){ //spurious wake up
 					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
 				}
 				else{
-					pool->swimmers[pool->back_index % (NMIDDLE + NHIGH)].type = 0;
 					index = pool->back_index;
 					pool->back_index++;
 					pool->nMiddleWaiting++;
-					rthread_cv_wait(&pool->swimmers[(pool->back_index) % (NMIDDLE + NHIGH)].cv);
+					pool->swimmers[index % (NMIDDLE + NHIGH)].type = 0;
+					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
 				}
 			}
 			if(index != default_index){	//had to go through the while loop		
 				pool->nMiddleWaiting--;
-				pool->front_index++;
 				pool->swimmers[(index) % (NMIDDLE + NHIGH)].type = -1;
-
 			}
 			pool->nMiddleEntered++;
 
@@ -75,16 +70,16 @@ void pool_enter(struct pool *pool, int level){
 					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
 				}
 				else{
-					pool->swimmers[pool->back_index % (NMIDDLE + NHIGH)].type = 1;
 					index = pool->back_index;
 					pool->back_index++;
 					pool->nHighWaiting++;
-					rthread_cv_wait(&pool->swimmers[(pool->back_index) % (NMIDDLE + NHIGH)].cv);
+					pool->swimmers[index % (NMIDDLE + NHIGH)].type = 1;
+					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
+
 				}
 			}
 			if(index != default_index){			
 				pool->nHighWaiting--;
-				pool->front_index++;
 				pool->swimmers[(index) % (NMIDDLE + NHIGH)].type = -1;
 			}
 			pool->nHighEntered++;
@@ -97,23 +92,15 @@ void pool_enter(struct pool *pool, int level){
 
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
-		printf("this is front index %d\n", pool->front_index);
-		printf("this is back index %d\n", pool->back_index);
-		for(int i = 0; i < NHIGH + NMIDDLE; i++){
-			printf("%d", pool->swimmers[i].type);
-		}
 
 		if (level == 0){
 			pool->nMiddleEntered--;
 			if (pool->front_index == pool->back_index || pool->nMiddleEntered > 0){ //no one waiting, just leave 
 			}
 			else if (pool->nMiddleEntered == 0){ 
-				printf("middle enetere d%d\n", pool->nMiddleEntered);
-				int count = pool->front_index;
-				if(pool->swimmers[count % (NMIDDLE + NHIGH)].type == 0){ printf("yes\n");}
-				while(pool->swimmers[count % (NMIDDLE + NHIGH)].type == 1){
-					rthread_cv_notify(&pool->swimmers[(count) % (NMIDDLE + NHIGH)].cv);
-					count++;
+				while(pool->swimmers[pool->front_index % (NMIDDLE + NHIGH)].type == 1){
+					rthread_cv_notify(&pool->swimmers[(pool->front_index) % (NMIDDLE + NHIGH)].cv);
+					pool->front_index++;
 				}
 			}
 
@@ -123,12 +110,9 @@ void pool_exit(struct pool *pool, int level){
 			if (pool->front_index == pool->back_index || pool->nHighEntered > 0){ //no one waiting, just leave 
 			}
 			else if (pool->nHighEntered == 0 ){
-				printf("high enetere d%d\n", pool->nHighEntered);
-				int count = pool->front_index;
-				if(pool->swimmers[count % (NMIDDLE + NHIGH)].type == 0){ printf("yes\n");}
-				while(pool->swimmers[count % (NMIDDLE + NHIGH)].type == 0){
-					rthread_cv_notify(&pool->swimmers[(count) % (NMIDDLE + NHIGH)].cv);
-					count++;
+				while(pool->swimmers[pool->front_index % (NMIDDLE + NHIGH)].type == 0){
+					rthread_cv_notify(&pool->swimmers[(pool->front_index) % (NMIDDLE + NHIGH)].cv);
+					pool->front_index++;
 				}
 			}		
 
@@ -151,7 +135,7 @@ void swimmer(void *shared, void *arg){
 	struct pool *pool = (struct pool *) shared;
 	char *name = (char *) arg;
 	for (int i = 0; i < NEXPERIMENTS; i++) {
-		rthread_delay(random() % 1000);
+		rthread_delay(random() % 10);
 		printf("swimmer %s entering pool\n", name);
 		pool_enter(pool, *name == 'h');
 		printf("swimmer %s entered pool\n", name);

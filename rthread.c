@@ -95,14 +95,11 @@ void rthread_cv_notify(rthread_cv_t *cv){
 	/* Simulate spurious wakeups to simplify testing.
 	 */
 	if (random() % 5 == 0) {
-		printf("in random");
 		int r = pthread_cond_broadcast(&cv->cond);
-		printf("int %d", r);
 		assert(r == 0);
 		return;
 	}
 	int r = pthread_cond_signal(&cv->cond);
-	printf("this is r%d\n", r);
 	assert(r == 0);
 }
 

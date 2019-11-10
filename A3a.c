@@ -6,8 +6,8 @@
 #define MIDDLE 0
 #define HIGH 1
 #define NLANES 7
-#define NMIDDLE 20
-#define NHIGH 20
+#define NMIDDLE 10
+#define NHIGH 10
 #define NEXPERIMENTS 5
 
 struct pool {
@@ -31,23 +31,19 @@ void pool_init(struct pool *pool){
 void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){ //corressponds to middle school
-			assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));
 			while (pool->nHighEntered > 0 || pool->nMiddleEntered > NLANES){
 				pool->nMiddleWaiting++;
 				rthread_cv_wait(&pool->middle);
 				pool->nMiddleWaiting--;
 			}
-			assert(pool->nHighEntered == 0 || pool->nMiddleEntered < NLANES);
 			pool->nMiddleEntered++;
 		}
 		else if (level == 1){ //high school
-			assert(pool->nMiddleEntered == 0 || (pool->nMiddleEntered > 0 && pool->nHighEntered == 0));
 			while (pool->nMiddleEntered > 0 || pool->nHighEntered > NLANES){
 				pool->nHighWaiting++;
 				rthread_cv_wait(&pool->high);
 				pool->nHighWaiting--;
 			}
-			assert(pool->nMiddleEntered == 0 || pool->nHighEntered < NLANES);
 			pool->nHighEntered++;
 		}
 		else{
@@ -59,8 +55,6 @@ void pool_enter(struct pool *pool, int level){
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		if (level == 0){ 
-			assert(pool->nHighEntered == 0);
-			assert(pool->nMiddleEntered > 0);
 			pool->nMiddleEntered--;
 			if(pool->nMiddleWaiting > 0){
 				rthread_cv_notify(&pool->middle);
@@ -70,8 +64,6 @@ void pool_exit(struct pool *pool, int level){
 			}
 		}
 		else if (level == 1){
-			assert(pool->nMiddleEntered == 0);
-			assert(pool->nHighEntered > 0);
 			pool->nHighEntered--;
 			if(pool->nHighWaiting > 0 ){
 				rthread_cv_notify(&pool->high);
