@@ -13,7 +13,7 @@
 
 struct pool {
 	rthread_lock_t lock;
-	//make an array of structs
+	//an array of structs
 	struct {
 		int type; //whether this type is middle or high 
 		rthread_cv_t cv; //each swimmer gets their own conditional variable
@@ -27,11 +27,10 @@ struct pool {
 void pool_init(struct pool *pool){
 	memset(pool, 0, sizeof(*pool));
 	rthread_lock_init(&pool->lock);
-	// initialize your monitor variables here
 	//initalize each conditional variable in struct array
 	for( int i = 0; i < NMIDDLE + NHIGH; i++){
 		rthread_cv_init(&pool->swimmers[i].cv, &pool->lock);
-		pool->swimmers[i].type = -1;
+		pool->swimmers[i].type = -1; //initalize to -1
 	}
 	pool->front_index = 0; 
 	pool->back_index = 0;
@@ -39,33 +38,41 @@ void pool_init(struct pool *pool){
 	pool->nMiddleWaiting = pool->nHighWaiting = 0;
 }
 
+//set deafult index to an arbitary large number 
 int default_index = NMIDDLE*6000 + NHIGH*6000;
 void pool_enter(struct pool *pool, int level){
 	int index = default_index;
 	rthread_with(&pool->lock) {
-		if (level == 0){ //corresponds to middle school
-			while(!((pool->nHighEntered == 0 && pool->nHighWaiting == 0) || index < pool->front_index)){ //less than or equal to?
-				if(index != default_index){ //spurious wake up
+		//corresponds to middle school
+		if (level == 0){
+			/*wait if there are high schoolers in the pool or if they are waiting and if your index isn't 
+			less than the first index of the waiting queue */
+			while((pool->nHighEntered != 0 || pool->nHighWaiting != 0) && !(index < pool->front_index)){
+				//if spurious wake up, go back to sleep and wait to be notified 
+				if(index != default_index){ 
 					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
 				}
 				else{
+					//increment indexes and waiting variables
 					index = pool->back_index;
 					pool->back_index++;
 					pool->nMiddleWaiting++;
+					//set the type of the swimmer in waiting queue to 0 and wait 
 					pool->swimmers[index % (NMIDDLE + NHIGH)].type = 0;
 					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
 				}
 			}
-			if(index != default_index){	//had to go through the while loop		
+			//had to go through the while loop	
+			if(index != default_index){	
+				//if it waited, reset the variables before entering	
 				pool->nMiddleWaiting--;
 				pool->swimmers[(index) % (NMIDDLE + NHIGH)].type = -1;
 			}
 			pool->nMiddleEntered++;
-
-
 		}
-		else if (level == 1){
-			while(!((pool->nMiddleEntered == 0 && pool->nMiddleWaiting == 0) || index < pool->front_index)){
+		//same logic as above but with high schoolers
+		else if (level == 1){  
+			while((pool->nMiddleEntered != 0 && pool->nMiddleWaiting != 0) && !(index < pool->front_index)){
 				if(index != default_index){
 					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
 				}
@@ -92,11 +99,14 @@ void pool_enter(struct pool *pool, int level){
 
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
-
+        //corresponds to middle school
 		if (level == 0){
-			pool->nMiddleEntered--;
-			if (pool->front_index == pool->back_index || pool->nMiddleEntered > 0){ //no one waiting, just leave 
+			//decrement the entered variable
+			pool->nMiddleEntered--; 
+			//if there is no one in the waiting queue, or if there are other middle schoolers in the pool, do nothing
+			if (pool->front_index == pool->back_index || pool->nMiddleEntered > 0){ 
 			}
+			//if the pool is empty now, notify the next group of high schoolers in order
 			else if (pool->nMiddleEntered == 0){ 
 				while(pool->swimmers[pool->front_index % (NMIDDLE + NHIGH)].type == 1){
 					rthread_cv_notify(&pool->swimmers[(pool->front_index) % (NMIDDLE + NHIGH)].cv);
@@ -105,9 +115,10 @@ void pool_exit(struct pool *pool, int level){
 			}
 
 		}
+		//same logic as above with high schoolers
 		else if (level == 1){
 			pool->nHighEntered--;
-			if (pool->front_index == pool->back_index || pool->nHighEntered > 0){ //no one waiting, just leave 
+			if (pool->front_index == pool->back_index || pool->nHighEntered > 0){
 			}
 			else if (pool->nHighEntered == 0 ){
 				while(pool->swimmers[pool->front_index % (NMIDDLE + NHIGH)].type == 0){

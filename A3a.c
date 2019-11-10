@@ -22,6 +22,8 @@ struct pool {
 void pool_init(struct pool *pool){
 	memset(pool, 0, sizeof(*pool));
 	rthread_lock_init(&pool->lock);
+	//two condition variabes
+	//one for middle schooler and one for high schoolers
 	rthread_cv_init(&pool->high, &pool->lock);
 	rthread_cv_init(&pool->middle, &pool->lock);
 	pool->nHighEntered = pool->nHighWaiting = 0;
@@ -30,15 +32,19 @@ void pool_init(struct pool *pool){
 
 void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
-		if (level == 0){ //corressponds to middle school
+		//corresponds to middle school
+		if (level == 0){
+			//if there are high schoolers in the pool or the max number of swimmers in pool, wait 
 			while (pool->nHighEntered > 0 || pool->nMiddleEntered > NLANES){
 				pool->nMiddleWaiting++;
 				rthread_cv_wait(&pool->middle);
 				pool->nMiddleWaiting--;
 			}
+			//once you are done waiting or if those conditions aren't met, enter pool and increment variable
 			pool->nMiddleEntered++;
 		}
-		else if (level == 1){ //high school
+		//corresponds to high school, same logic as above 
+		else if (level == 1){
 			while (pool->nMiddleEntered > 0 || pool->nHighEntered > NLANES){
 				pool->nHighWaiting++;
 				rthread_cv_wait(&pool->high);
@@ -54,15 +60,20 @@ void pool_enter(struct pool *pool, int level){
 
 void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
+		//middle school
 		if (level == 0){ 
+			//decrement variable
 			pool->nMiddleEntered--;
 			if(pool->nMiddleWaiting > 0){
+				//let middle schoolers in if they are waiting
 				rthread_cv_notify(&pool->middle);
 			}
-			else if(pool->nMiddleEntered == 0){ //if no one is the pool and both waiting, give priority to the other team
+ 			//if no one is the pool and both waiting, give priority to the other team
+			else if(pool->nMiddleEntered == 0){
 				rthread_cv_notifyAll(&pool->high);
 			}
 		}
+		//same logic as above but with high school
 		else if (level == 1){
 			pool->nHighEntered--;
 			if(pool->nHighWaiting > 0 ){
