@@ -38,7 +38,7 @@ void pool_init(struct pool *pool){
 }
 
 //set deafult index to an arbitary large number 
-int default_index = NMIDDLE*6000 + NHIGH*6000;
+int default_index = NMIDDLE*(NEXPERIMENTS + 1) + NHIGH*(NEXPERIMENTS + 1);
 void pool_enter(struct pool *pool, int level){
 	int index = default_index;
 	rthread_with(&pool->lock) {
