@@ -10,7 +10,6 @@
 #define NHIGH 7
 #define NEXPERIMENTS 5
 
-
 struct pool {
 	rthread_lock_t lock;
 	//an array of structs
@@ -45,6 +44,7 @@ void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		//corresponds to middle school
 		if (level == 0){
+			assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));			
 			/*wait if there are high schoolers in the pool or if they are waiting and if your index isn't 
 			less than the first index of the waiting queue */
 			while((pool->nHighEntered != 0 || pool->nHighWaiting != 0) && !(index < pool->front_index)){
@@ -68,10 +68,12 @@ void pool_enter(struct pool *pool, int level){
 				pool->nMiddleWaiting--;
 				pool->swimmers[(index) % (NMIDDLE + NHIGH)].type = -1;
 			}
+			assert(pool->nHighEntered == 0);
 			pool->nMiddleEntered++;
 		}
 		//same logic as above but with high schoolers
 		else if (level == 1){  
+			assert(pool->nMiddleEntered == 0 || (pool->nMiddleEntered > 0 && pool->nHighEntered == 0));
 			while((pool->nMiddleEntered != 0 && pool->nMiddleWaiting != 0) && !(index < pool->front_index)){
 				if(index != default_index){
 					rthread_cv_wait(&pool->swimmers[(index) % (NMIDDLE + NHIGH)].cv);
@@ -89,6 +91,7 @@ void pool_enter(struct pool *pool, int level){
 				pool->nHighWaiting--;
 				pool->swimmers[(index) % (NMIDDLE + NHIGH)].type = -1;
 			}
+			assert(pool->nMiddleEntered == 0);
 			pool->nHighEntered++;
 		}
 		else{
@@ -101,6 +104,8 @@ void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
         //corresponds to middle school
 		if (level == 0){
+			assert(pool->nHighEntered == 0);
+			assert(pool->nMiddleEntered > 0);
 			//decrement the entered variable
 			pool->nMiddleEntered--; 
 			//if there is no one in the waiting queue, or if there are other middle schoolers in the pool, do nothing
@@ -117,6 +122,8 @@ void pool_exit(struct pool *pool, int level){
 		}
 		//same logic as above with high schoolers
 		else if (level == 1){
+			assert(pool->nMiddleEntered == 0);
+			assert(pool->nHighEntered > 0);
 			pool->nHighEntered--;
 			if (pool->front_index == pool->back_index || pool->nHighEntered > 0){
 			}

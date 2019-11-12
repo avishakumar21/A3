@@ -34,6 +34,7 @@ void pool_enter(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		//corresponds to middle school
 		if (level == 0){
+			//assert(pool->nHighEntered == 0 || (pool->nHighEntered > 0 && pool->nMiddleEntered == 0));
 			//if there are high schoolers in the pool or the max number of swimmers in pool, wait 
 			while (pool->nHighEntered > 0 || pool->nMiddleEntered > NLANES){
 				pool->nMiddleWaiting++;
@@ -41,15 +42,18 @@ void pool_enter(struct pool *pool, int level){
 				pool->nMiddleWaiting--;
 			}
 			//once you are done waiting or if those conditions aren't met, enter pool and increment variable
+			//assert(pool->nHighEntered == 0 || pool->nMiddleEntered < NLANES);
 			pool->nMiddleEntered++;
 		}
 		//corresponds to high school, same logic as above 
 		else if (level == 1){
+			//assert(pool->nMiddleEntered == 0 || (pool->nMiddleEntered > 0 && pool->nHighEntered == 0));
 			while (pool->nMiddleEntered > 0 || pool->nHighEntered > NLANES){
 				pool->nHighWaiting++;
 				rthread_cv_wait(&pool->high);
 				pool->nHighWaiting--;
 			}
+			//assert(pool->nMiddleEntered == 0 || pool->nHighEntered < NLANES);
 			pool->nHighEntered++;
 		}
 		else{
@@ -62,6 +66,8 @@ void pool_exit(struct pool *pool, int level){
 	rthread_with(&pool->lock) {
 		//middle school
 		if (level == 0){ 
+			//assert(pool->nHighEntered == 0);
+			//assert(pool->nMiddleEntered > 0);
 			//decrement variable
 			pool->nMiddleEntered--;
 			if(pool->nMiddleWaiting > 0){
@@ -75,6 +81,8 @@ void pool_exit(struct pool *pool, int level){
 		}
 		//same logic as above but with high school
 		else if (level == 1){
+			//assert(pool->nMiddleEntered == 0);
+			//assert(pool->nHighEntered > 0);
 			pool->nHighEntered--;
 			if(pool->nHighWaiting > 0 ){
 				rthread_cv_notify(&pool->high);
